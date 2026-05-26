@@ -1,18 +1,42 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+
+  "metadata": {
+    "description": "Azure cross-region TCP 135 test (koreacentral -> eastus2)",
+    "instructions": {
+      "step0": "Create two resource groups first: one in koreacentral and one in eastus2",
+      "step1": "Deploy this template to the eastus2 resource group with peerPublicIp = 0.0.0.0",
+      "step2": "After deployment, go to the VM -> Networking and copy the Public IP",
+      "step3": "Deploy this template again to the koreacentral resource group",
+      "step4": "Set peerPublicIp = <public IP from eastus2 deployment>",
+      "result": "The VM in koreacentral will send TCP traffic on port 135 to the VM in eastus2",
+      "cleanup": "Delete both resource groups after testing to avoid charges"
+    }
+  },
+
   "parameters": {
     "location": {
-      "type": "string"
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment (use koreacentral or eastus2)"
+      }
     },
     "peerPublicIp": {
       "type": "string",
-      "defaultValue": "0.0.0.0"
+      "defaultValue": "0.0.0.0",
+      "metadata": {
+        "description": "Peer public IP. Use 0.0.0.0 for first deployment (eastus2), then supply that IP when deploying to koreacentral"
+      }
     },
     "uniqueTag": {
-      "type": "string"
+      "type": "string",
+      "metadata": {
+        "description": "Unique suffix to avoid naming conflicts (example: run1)"
+      }
     }
   },
+
   "variables": {
     "vnetName": "[concat('vnet-', parameters('uniqueTag'))]",
     "subnetName": "default",
@@ -22,7 +46,9 @@
     "vmName": "[concat('vm-', parameters('uniqueTag'))]",
     "hasPeerIp": "[not(equals(parameters('peerPublicIp'), '0.0.0.0'))]"
   },
+
   "resources": [
+
     {
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2023-04-01",
@@ -42,6 +68,7 @@
         ]
       }
     },
+
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "apiVersion": "2023-04-01",
@@ -78,6 +105,7 @@
         ]
       }
     },
+
     {
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2023-04-01",
@@ -90,6 +118,7 @@
         "publicIPAllocationMethod": "Static"
       }
     },
+
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2023-04-01",
@@ -119,6 +148,7 @@
         ]
       }
     },
+
     {
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2023-03-01",
@@ -158,6 +188,7 @@
       }
     }
   ],
+
   "outputs": {
     "publicIp": {
       "type": "string",
